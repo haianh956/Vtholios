@@ -1,95 +1,53 @@
--- ===== BOOT =====
+-- BOOT
 repeat task.wait() until game:IsLoaded()
-
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+repeat task.wait() until Players.LocalPlayer
 local LocalPlayer = Players.LocalPlayer
-repeat task.wait() until LocalPlayer
 
--- ===== CONFIG =====
+-- CONFIG
 local API_BASE = "https://oliosbkit.onrender.com"
 local key = getgenv().Key
-
 if not key then
     LocalPlayer:Kick("Missing Key")
     return
 end
 
--- ===== HWID =====
+-- HWID
 local hwid = "UNKNOWN"
 pcall(function()
     hwid = game:GetService("RbxAnalyticsService"):GetClientId()
 end)
 
--- ===== VERIFY =====
+-- VERIFY
 local function verifyKey()
-    local url =
-        API_BASE ..
+    local url = API_BASE ..
         "/api/verify?key=" ..
         HttpService:UrlEncode(key) ..
         "&hwid=" ..
         HttpService:UrlEncode(hwid)
 
-    warn("[VERIFY] URL:", url)
+    local ok, body = pcall(function()
+        return game:HttpGet(url)
+    end)
 
-    for i = 1, 3 do
-        local ok, body = pcall(function()
-            return game:HttpGet(url)
-        end)
-
-        if ok and body then
-            local success, res = pcall(function()
-                return HttpService:JSONDecode(body)
-            end)
-
-            if success and res then
-                if res.success then
-                    warn("[VERIFY] KEY OK")
-                    return true
-                else
-                    LocalPlayer:Kick(res.message or "Key Invalid")
-                    return false
-                end
-            end
-        end
-
-        task.wait(2)
+    if not ok then
+        LocalPlayer:Kick("API Error")
+        return false
     end
 
-    LocalPlayer:Kick("API Error (Timeout)")
-    return false
+    local data = HttpService:JSONDecode(body)
+    if not data.success then
+        LocalPlayer:Kick(data.message or "Key Invalid")
+        return false
+    end
+
+    return true
 end
 
--- ===== RUN =====
-if not verifyKey() then
-    return
-end
+if not verifyKey() then return end
 
-print("[Olios] Verify Passed – Load Menu")
-
----- WAIT GAME
-repeat
-    task.wait()
-until game:IsLoaded()
-
--- SERVICES
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
--- GET KEY
-local key = getgenv().Key
-if not key then
-    LocalPlayer:Kick("Missing Key")
-    return
-end
-
--- VERIFY (CHỈ 1 LẦN)
-if not verifyKey() then
-    return
-end
-
-warn("VERIFY OK - LOAD MENU")
+print("VERIFY OK – LOAD MENU")
 
 -- LOAD FLUENT
 local Fluent
@@ -119,6 +77,9 @@ local Window = Fluent:CreateWindow({
     Size = UDim2.fromOffset(500, 320),
     MinimizeKey = Enum.KeyCode.End
 })
+
+local v15 = Window ⬅
+
 local v16 = {
     Home = v15:AddTab({
         Title = "Tab Information"
